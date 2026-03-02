@@ -27,7 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <p><strong>Participants:</strong></p>
           <ul class="participants-list">
-            ${details.participants.map(p => `<li>${p}</li>`).join('')}
+            ${details.participants.map(p => `<li>
+                ${p}
+                <span class="delete-participant" data-activity="${name}" data-email="${p}" title="Unregister">&#x1F5D1;</span>
+              </li>`).join('')}
           </ul>
         `;
 
@@ -82,6 +85,37 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // clickable participant deletion (delegation)
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.dataset.activity;
+      const email = event.target.dataset.email;
+
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
+          { method: "DELETE" }
+        );
+        const result = await response.json();
+        if (response.ok) {
+          messageDiv.textContent = result.message;
+          messageDiv.className = "success";
+          fetchActivities(); // refresh list
+        } else {
+          messageDiv.textContent = result.detail || "Unable to unregister";
+          messageDiv.className = "error";
+        }
+      } catch (err) {
+        messageDiv.textContent = "Network error while unregistering.";
+        messageDiv.className = "error";
+        console.error("Unregister error:", err);
+      }
+
+      messageDiv.classList.remove("hidden");
+      setTimeout(() => messageDiv.classList.add("hidden"), 5000);
     }
   });
 
